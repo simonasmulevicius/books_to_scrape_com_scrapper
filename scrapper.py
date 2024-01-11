@@ -82,7 +82,7 @@ def convert_product_information_table_to_dict(product_information_table):
 
 
 def get_products_with_raw_details(product_details_url):
-    logging.info(f"collecting product data drom '{product_details_url}'")
+    logging.info(f"collecting product data from '{product_details_url}'")
     product_soup = get_page_contents(product_details_url)
 
     product_page_article = product_soup.find("article", class_="product_page")
@@ -135,8 +135,8 @@ def parse_product_details(product_details: dict) -> dict:
         "price_excluding_tax": _extract_price_in_pounds(
             product_details["price_excluding_tax"]
         ),
-        "tax": product_details["tax"],
-        "availability": product_details["availability"],
+        "tax": _extract_price_in_pounds(product_details["tax"]),
+        "availability": _extract_product_availability(product_details["availability"]),
     }
 
 
