@@ -3,18 +3,24 @@ import requests
 from bs4 import BeautifulSoup
 import time
 from urllib.parse import urljoin
+import logging
+
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
 
-def wait(sleeping_time_quantum_in_seconds=1):
+def _wait(sleeping_time_quantum_in_seconds=1):
     time.sleep(sleeping_time_quantum_in_seconds)
 
 
 def get_page_contents(url: str) -> BeautifulSoup:
-    wait()  # implicitly wait to prevent DDoS or violating Terms of Service of the page under test
+    # _wait()  # implicitly wait to prevent DDoS or violating Terms of Service of the page under test
     response = requests.get(url)
 
     if response.status_code != 200:
-        # TODO consider what should we do
+        logging.error(
+            f"failed to get page contents of '{url}' (instead, received status code {response.status_code})"
+        )
+        # TODO consider what should we do - maybe exponential backoff retry with some fallback mechanism?
         raise Exception("Future TODO")
 
     return BeautifulSoup(response.content, "html.parser")
@@ -49,6 +55,7 @@ def get_product_links(page_number: int):
     products_group_url = (
         f"https://books.toscrape.com/catalogue/category/books_1/page-{page_number}.html"
     )
+    logging.info(f"extracting product links from '{products_group_url}'")
     products_group_soup = get_page_contents(products_group_url)
     product_urls = extract_product_links_from_soap(
         products_group_soup, products_group_url
@@ -74,7 +81,8 @@ def convert_product_information_table_to_dict(product_information_table):
     return product_information_dict
 
 
-def get_products_with_details(product_details_url):
+def get_products_with_raw_details(product_details_url):
+    logging.info(f"collecting product data drom '{product_details_url}'")
     product_soup = get_page_contents(product_details_url)
 
     product_page_article = product_soup.find("article", class_="product_page")
@@ -96,13 +104,49 @@ def get_products_with_details(product_details_url):
         "upc": product_information_dict["UPC"],
         "price_excluding_tax": product_information_dict["Price (excl. tax)"],
         "tax": product_information_dict["Tax"],
-        "availability": product_information_dict[
-            "Availability"
-        ],  # TODO In stock/not in stock + x available
+        "availability": product_information_dict["Availability"],
     }
 
 
-def save_products(products_with_details):
+def _convert_string_to_float(number_str: str) -> float or None:
+    try:
+        return float(number_str)
+    except ValueError:
+        logging.warning(f"failed to convert '{number_str}' to float")
+        return None
+
+
+def _extract_price_in_pounds(price_in_pounds_str: str) -> float or None:
+    return _convert_string_to_float(price_in_pounds_str.replace("£", ""))
+
+
+def _extract_product_availability(product_availability_str: str) -> int:
+    if "In stock" not in product_availability_str:
+        return 0
+
+    return int(
+        product_availability_str.replace("In stock (", "").replace(" available)", "")
+    )
+
+
+def parse_product_details(product_details: dict) -> dict:
+    return {
+        **product_details,
+        "price_excluding_tax": _extract_price_in_pounds(
+            product_details["price_excluding_tax"]
+        ),
+        "tax": product_details["tax"],
+        "availability": product_details["availability"],
+    }
+
+
+def deduplicate_products(products_with_details):
+    product_codes = [product["upc"] for product in products_with_details]
+    # dict structure ensures that the set would have just unique key values (hence, duplicates will be overwritten)
+    return dict(zip(product_codes, products_with_details))
+
+
+def store_extracted_products(products_with_details):
     with open("db.json", "w") as file:
         json.dump(products_with_details, file)
 
@@ -110,15 +154,19 @@ def save_products(products_with_details):
 def main():
     product_urls = []
     for page_number in range(
-        1, 51
+        1, 51  # TODO reset back to 51
     ):  # TODO instead of having hardcoded threshold create a way to extract dynamic threshold
         product_urls += get_product_links(page_number)
 
+    products_with_raw_details = [
+        get_products_with_raw_details(product_url) for product_url in product_urls
+    ]
     products_with_details = [
-        get_products_with_details(product_url) for product_url in product_urls
+        parse_product_details(product) for product in products_with_raw_details
     ]
 
-    save_products(products_with_details)
+    unique_products_with_details = deduplicate_products(products_with_details)
+    store_extracted_products(unique_products_with_details)
 
 
 if __name__ == "__main__":
