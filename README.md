@@ -1,6 +1,7 @@
 # books_to_scrape_com_scrapper
 
-This is a web scrapper that collects product information from [books.toscrape.com](https://books.toscrape.com/)
+This is a web scrapper that collects product information 
+from [books.toscrape.com](https://books.toscrape.com/)
 
 ## 🏗️ How to run (on Windows)?
 ```
@@ -47,3 +48,31 @@ format. Unfortunatelly, this was not the case. But it
 turned out that `curl` managed to download the page 
 contents. Hence, the current strategy would be to use
 `requests` and `BeutifulSoap` libraries to extract data.
+
+### Rate limiting considerations
+
+The page does not have `robots.txt` page (i.e., 
+`http://books.toscrape.com/robots.txt`). Hence, one can't
+deduce safe rate limits for the e-shop.
+
+### Page structure traverse strategy
+
+**Initial/naive implementation**: find book links by iterating
+over `https://books.toscrape.com/catalogue/page-X.html` and 
+then incorporate investigate further links that have the 
+following format: `https://books.toscrape.com/catalogue/BOOKNAME_BOOKNUMBER/index.html`.
+
+**More robust strategy** start in 
+`https://books.toscrape.com/index.html` and then perform
+Breadth-first-search (BFS) by ascending via `<a>` tags.
+This might show us more available books otherwise not visible
+from the main catalogue. Moreover, such method would be more
+resilient to page structure change (e.g., the shop owners could
+accidentaly change the page structure, say by introducing
+discount code `div`). Page structure change could prevent us 
+from finding the total number of pages in the catalogue (e.g., 
+50 in `Page 3 of 50`). For BFS to work we would need to 
+remember already discovered links. Drawback of BFS could be
+that we might end up in the rabbit hole searching for 
+recursively infinite number of pages (e.g., one url could be 
+pointing to itself with some extra url arguments).
