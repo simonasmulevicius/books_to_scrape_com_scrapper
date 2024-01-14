@@ -1,5 +1,6 @@
 import json
-import requests
+from aiohttp import ClientSession
+import asyncio
 from bs4 import BeautifulSoup
 import time
 from urllib.parse import urljoin
@@ -7,21 +8,26 @@ import logging
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
+from utilities import flatten_list_of_lists
+from constants import CATALOGUE_URL, HOME_URL
+
 
 def _wait(sleeping_time_quantum_in_seconds=1):
     time.sleep(sleeping_time_quantum_in_seconds)
 
 
-def get_page_contents(url: str) -> BeautifulSoup:
-    # _wait()  # implicitly wait to prevent DDoS or violating Terms of Service of the page under test
-    response = requests.get(url)
+async def get_page_contents(url: str) -> str:
+    async with ClientSession() as session:
+        async with session.get(url) as response:
+            # _wait()  # implicitly wait to prevent DDoS or violating Terms of Service of the page under test
+            if response.status != 200:
+                logging.error(
+                    f"failed to get page contents of '{url}' (instead, received status code {response.status_code})"
+                )
+                # TODO consider what should we do - maybe exponential backoff retry with some fallback mechanism?
+                raise Exception("Failed to fetch page")
 
-    if response.status_code != 200:
-        logging.error(
-            f"failed to get page contents of '{url}' (instead, received status code {response.status_code})"
-        )
-        # TODO consider what should we do - maybe exponential backoff retry with some fallback mechanism?
-        raise Exception("Future TODO")
+            return await response.text()
 
     return BeautifulSoup(response.content, "html.parser")
 
@@ -51,12 +57,12 @@ def extract_product_links_from_soap(products_group_soup: BeautifulSoup, base_url
     return product_urls
 
 
-def get_product_links(page_number: int):
-    products_group_url = (
-        f"https://books.toscrape.com/catalogue/category/books_1/page-{page_number}.html"
-    )
+async def get_product_links(page_number: int):
+    products_group_url = f"{CATALOGUE_URL}/page-{page_number}.html"
     logging.info(f"extracting product links from '{products_group_url}'")
-    products_group_soup = get_page_contents(products_group_url)
+    products_group_page_content = await get_page_contents(products_group_url)
+    products_group_soup = BeautifulSoup(products_group_page_content, "html.parser")
+
     product_urls = extract_product_links_from_soap(
         products_group_soup, products_group_url
     )
@@ -81,9 +87,10 @@ def convert_product_information_table_to_dict(product_information_table):
     return product_information_dict
 
 
-def get_products_with_raw_details(product_details_url):
+async def get_products_with_raw_details(product_details_url):
     logging.info(f"collecting product data from '{product_details_url}'")
-    product_soup = get_page_contents(product_details_url)
+    product_details_page_content = await get_page_contents(product_details_url)
+    product_soup = BeautifulSoup(product_details_page_content, "html.parser")
 
     product_page_article = product_soup.find("article", class_="product_page")
     product_main_container = (
@@ -151,13 +158,49 @@ def store_extracted_products(products_with_details):
         json.dump(products_with_details, file)
 
 
-def main():
-    product_urls = []
-    for page_number in range(
-        1, 51  # TODO reset back to 51
-    ):  # TODO instead of having hardcoded threshold create a way to extract dynamic threshold
-        product_urls += get_product_links(page_number)
+async def get_total_number_of_catalogue_pages():
+    """
+    instead of having hardcoded pages threshold (50),
+    we extract number of pages dynamically
+    """
 
+    home_page = await get_page_contents(HOME_URL)
+    home_page_soup = BeautifulSoup(home_page, "html.parser")
+
+    page_count_wrapper_element = product_soup.find("ul", class_="pager")
+    if page_count_wrapper_element is None:
+        raise Exception("Could not find catalogue page count")
+
+    page_count_element = page_count_wrapper_element.find("li", class_="current")
+    if page_count_element is None:
+        raise Exception("Could not find catalogue page count")
+
+    page_count_raw = page_count_element.get_text(strip=True)
+    if "Page " not in page_count_raw or " of " not in page_count_raw:
+        raise Exception("Catalogue page count format has changed")
+
+    page_count_str = page_count_raw.split(" of ")[1]
+    if not page_count_str.isnumeric():
+        raise Exception("Total catalogue page count is not an integer")
+
+    return int(page_count_str)
+
+
+async def get_all_product_urls():
+    number_of_catalogue_pages = await get_total_number_of_catalogue_pages()
+
+    tasks_to_get_product_links = []
+    for page_number in range(1, number_of_catalogue_pages + 1):
+        task = asyncio.create_task(get_product_links(page_number))
+        tasks_to_get_product_links.append(task)
+
+    pages_product_urls = await asyncio.gather(*tasks_to_get_product_links)
+    product_urls = flatten_list_of_lists(pages_product_urls)
+    return product_urls
+
+
+async def main():
+    product_urls = await get_all_product_urls()
     products_with_raw_details = [
         get_products_with_raw_details(product_url) for product_url in product_urls
     ]
@@ -170,4 +213,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
