@@ -9,7 +9,6 @@ import logging
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
-from utilities import flatten_list_of_lists
 from constants import CATALOGUE_URL, HOME_URL
 
 
@@ -101,6 +100,10 @@ async def get_total_number_of_catalogue_pages():
         raise Exception("Total catalogue page count is not an integer")
 
     return int(page_count_str)
+
+
+def flatten_list_of_lists(list_of_lists: list) -> list:
+    return [item for sublist in list_of_lists for item in sublist]
 
 
 async def get_all_product_urls():
