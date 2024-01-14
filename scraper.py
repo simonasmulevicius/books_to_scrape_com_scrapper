@@ -236,7 +236,10 @@ def deduplicate_products(products_with_details):
 
 
 def store_extracted_products(products_with_details):
-    with open("db.json", "w") as file:
+    db_file_path = "./data/db.json"
+    os.makedirs(os.path.dirname(db_file_path), exist_ok=True)
+
+    with open(db_file_path, "w") as file:
         json.dump(products_with_details, file)
 
     logging.info(f"Finished scraping - found {len(products_with_details)} products")
