@@ -5,8 +5,8 @@ from [books.toscrape.com](https://books.toscrape.com/)
 
 ## How to run?
 ```
-docker build -t scraper .
-docker run -it --rm --name running-scraper scraper
+docker build -t scraper-image:latest .
+docker run -it --rm --name running-scraper scraper-image:latest
 ```
 
 
