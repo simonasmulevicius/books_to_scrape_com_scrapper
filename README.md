@@ -98,8 +98,34 @@ After running the pod, the end user/tester might want to
 investigate the database. Hence, `pvc.yaml` was added to 
 store the final database output in a persistent volume.
 
-`kubectl apply -f deployment.yaml`
+## Built docker image with:
+```
+docker build -t scraper-image:latest .
+```
 
+## Pushed docker image to Docker Hub:
+```
+docker tag scraper-image:latest simonasmulevicius/scraper-image:latest
+docker push simonasmulevicius/scraper-image:latest
+```
+
+Assuming that there is a local cluster (e.g., started with `minikube start`)
+the following commands need to be executed:
+
+```
+kubectl apply -f pvc.yaml
+kubectl apply -f deployment.yaml
+```
+
+To check that everything is working, I used:
+
+```
+kubectl get deployments
+kubectl get pods
+```
+
+Then, I used `kubectl logs scraper-deployment-5884c8f74c-b9t8w` to see
+logs for specific pod.
 
 # Task 4
 

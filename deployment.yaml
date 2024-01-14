@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: scraper
-          image: scraper-image:latest
+          image: simonasmulevicius/scraper-image:latest
           ports:
             - containerPort: 5314
           volumeMounts:
