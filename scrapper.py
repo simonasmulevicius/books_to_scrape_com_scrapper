@@ -12,14 +12,9 @@ from utilities import flatten_list_of_lists
 from constants import CATALOGUE_URL, HOME_URL
 
 
-def _wait(sleeping_time_quantum_in_seconds=1):
-    time.sleep(sleeping_time_quantum_in_seconds)
-
-
 async def get_page_contents(url: str) -> str:
     async with ClientSession() as session:
         async with session.get(url) as response:
-            # _wait()  # implicitly wait to prevent DDoS or violating Terms of Service of the page under test
             if response.status != 200:
                 logging.error(
                     f"failed to get page contents of '{url}' (instead, received status code {response.status_code})"
@@ -28,8 +23,6 @@ async def get_page_contents(url: str) -> str:
                 raise Exception("Failed to fetch page")
 
             return await response.text()
-
-    return BeautifulSoup(response.content, "html.parser")
 
 
 def extract_product_links_from_soap(products_group_soup: BeautifulSoup, base_url):
