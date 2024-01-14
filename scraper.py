@@ -239,6 +239,8 @@ def store_extracted_products(products_with_details):
     with open("db.json", "w") as file:
         json.dump(products_with_details, file)
 
+    logging.info(f"Finished scraping - found {len(products_with_details)} products")
+
 
 async def main():
     product_urls = await get_all_product_urls()
