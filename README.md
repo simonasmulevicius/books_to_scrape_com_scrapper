@@ -10,20 +10,6 @@ docker run -it --rm --name running-scraper scraper
 ```
 
 
-## 🏗️ How to run (on Windows)?
-```
-python -m venv venv
-source venv/Scripts/activate
-pip install -r requirements.txt
-```
-
-## 🏗️ How to run (on Mac/Ubuntu)?
-```
-python -m venv venv
-source venv\bin\activate
-pip install -r requirements.txt
-```
-
 # Task 1
 
 ### Technical Considerations
@@ -83,3 +69,20 @@ remember already discovered links. Drawback of BFS could be
 that we might end up in the rabbit hole searching for 
 recursively infinite number of pages (e.g., one url could be 
 pointing to itself with some extra url arguments).
+
+
+## Fallback run options:
+
+### Windows
+```
+python -m venv venv
+source venv/Scripts/activate
+pip install -r requirements.txt
+```
+
+### Mac/Ubuntu
+```
+python -m venv venv
+source venv\bin\activate
+pip install -r requirements.txt
+```
