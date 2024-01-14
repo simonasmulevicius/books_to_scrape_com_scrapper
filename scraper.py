@@ -6,6 +6,7 @@ import time
 from urllib.parse import urljoin
 import concurrent.futures
 import logging
+import os
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
