@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.9-slim
 
 WORKDIR /usr/src/app
 
@@ -6,4 +6,4 @@ COPY . /usr/src/app
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "./scrapper.py"]
+CMD ["python", "./scraper.py"]
