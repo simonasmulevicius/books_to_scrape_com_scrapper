@@ -127,6 +127,15 @@ kubectl get pods
 Then, I used `kubectl logs scraper-deployment-5884c8f74c-b9t8w` to see
 logs for specific pod.
 
+And it seemed to work :D
+```
+...
+2024-01-14 20:41:53,861 - collecting product data from 'https://books.toscrape.com/catalogue/a-spys-devotion-the-regency-spies-of-london-1_3/index.html'     
+2024-01-14 20:41:53,861 - collecting product data from 'https://books.toscrape.com/catalogue/1st-to-die-womens-murder-club-1_2/index.html'
+2024-01-14 20:41:53,861 - collecting product data from 'https://books.toscrape.com/catalogue/1000-places-to-see-before-you-die_1/index.html'
+2024-01-14 20:42:52,522 - Finished scraping - found 1000 products
+```
+
 # Task 4
 
 The final output is `db.json` which looks as follows:
