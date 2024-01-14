@@ -1,7 +1,14 @@
 # books_to_scrape_com_scrapper
 
-This is a web scrapper that collects product information 
+This is a web scraper that collects product information 
 from [books.toscrape.com](https://books.toscrape.com/)
+
+## How to run?
+```
+docker build -t scraper .
+docker run -it --rm --name running-scraper scraper
+```
+
 
 ## 🏗️ How to run (on Windows)?
 ```
