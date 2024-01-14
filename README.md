@@ -10,6 +10,22 @@ docker run -it --rm --name running-scraper scraper
 ```
 
 
+## Fallback run options:
+
+### Windows
+```
+python -m venv venv
+source venv/Scripts/activate
+pip install -r requirements.txt
+```
+
+### Mac/Ubuntu
+```
+python -m venv venv
+source venv\bin\activate
+pip install -r requirements.txt
+```
+
 # Task 1
 
 ### Technical Considerations
@@ -71,18 +87,58 @@ recursively infinite number of pages (e.g., one url could be
 pointing to itself with some extra url arguments).
 
 
-## Fallback run options:
+# Task 2
 
-### Windows
+Check `Dockerfile`.
+
+
+# Task 3
+
+After running the pod, the end user/tester might want to
+investigate the database. Hence, `pvc.yaml` was added to 
+store the final database output in a persistent volume.
+
+`kubectl apply -f deployment.yaml`
+
+
+# Task 4
+
+The final output is `db.json` which looks as follows:
 ```
-python -m venv venv
-source venv/Scripts/activate
-pip install -r requirements.txt
+{
+  "a897fe39b1053632": {
+    "product_name": "A Light in the Attic",
+    "upc": "a897fe39b1053632",
+    "price_excluding_tax": 51.77,
+    "tax": 0.0,
+    "availability": 22
+  },
+  "90fa61229261140a": {
+    "product_name": "Tipping the Velvet",
+    "upc": "90fa61229261140a",
+    "price_excluding_tax": 53.74,
+    "tax": 0.0,
+    "availability": 20
+  },
+ 
+ ...
+
+ "228ba5e7577e1d49": {
+    "product_name": "1,000 Places to See Before You Die",
+    "upc": "228ba5e7577e1d49",
+    "price_excluding_tax": 26.08,
+    "tax": 0.0,
+    "availability": 1
+  }
+}
 ```
 
-### Mac/Ubuntu
-```
-python -m venv venv
-source venv\bin\activate
-pip install -r requirements.txt
-```
+The _database_ copy is not included in this repo as it is
+a standard practise to keep large files outside 
+repository.
+
+I noticed problem with the data was that all books seemed
+to be sold tax-free. Moreover, all of the books were in
+stock. Hence, to test this application more thoroughly
+it would be benefial to see more products with different
+parameters.
